@@ -41,6 +41,7 @@ import diagnostic_updater
 import diagnostic_msgs
 import enway_reach_rs_driver.driver
 from sensor_msgs.msg import NavSatFix, NavSatStatus
+from geometry_msgs.msg import Vector3Stamped
     
 FixStatus = {-1 : 'No Fix',
               0 : 'Single Fix',
@@ -63,7 +64,7 @@ class ReachRsDriver(object):
         self.diagnostics = diagnostic_updater.Updater()
         self.diagnostics.setHardwareID('Emlid Reach RS')
         self.diagnostics.add('Receiver Status', self.add_diagnotics)
-        
+    
         self.connected = False
         self.connection_status = 'not connected'
         self.last_fix = None
@@ -154,7 +155,7 @@ class ReachRsDriver(object):
         data = data.strip().split()
         
         for sentence in data:
-            if 'GGA' in sentence or 'RMC' in sentence:
+            if 'GGA' in sentence or 'RMC' in sentence or 'IMU' in sentence:
                 try:
                     fix = self.driver.add_sentence(sentence, self.frame_id)
                     
@@ -162,3 +163,4 @@ class ReachRsDriver(object):
                         self.last_fix = fix
                 except ValueError as e:
                     rospy.logwarn("Value error, likely due to missing fields in the NMEA message. Error was: %s. Please report this issue at github.com/ros-drivers/nmea_navsat_driver, including a bag file with the NMEA sentences that caused it." % e)
+                
