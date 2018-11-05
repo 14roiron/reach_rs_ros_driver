@@ -126,7 +126,7 @@ parse_maps = {
         ("pitch", safe_float, 2),
         ("yaw", safe_float, 3),
         ]
-    
+
     }
 
 
@@ -137,7 +137,6 @@ def parse_nmea_sentence(nmea_sentence):
                      % repr(nmea_sentence))
         return False
     fields = [field.strip(',') for field in nmea_sentence.split(',')]
-
     # Ignore the $ and talker ID portions (e.g. GP)
     sentence_type = fields[0][3:]
 

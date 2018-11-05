@@ -48,7 +48,7 @@ class RosNMEADriver(object):
         self.vel_pub = rospy.Publisher('vel', TwistStamped, queue_size=1)
         self.time_ref_pub = rospy.Publisher('time_reference', TimeReference, queue_size=1)
         self.IMU_data_publisher_topic = rospy.get_param('~imu_topic_publish')
-        self.IMU_data_publisher = rospy.Publisher(IMU_data_publisher_topic, Vector3Stamped, queue_size=10)
+        self.IMU_data_publisher = rospy.Publisher(self.IMU_data_publisher_topic, Vector3Stamped, queue_size=10)
 
         self.time_ref_source = rospy.get_param('~time_ref_source', None)
         self.use_RMC = rospy.get_param('~useRMC', False)
@@ -57,7 +57,7 @@ class RosNMEADriver(object):
     # Returns the fix if we successfully did something with the passed in
     # nmea_string
     def add_sentence(self, nmea_string, frame_id, timestamp=None):
-        if not check_nmea_checksum(nmea_string):
+        if not check_nmea_checksum(nmea_string) and not 'IMU' in nmea_string :
             rospy.logwarn("Received a sentence with an invalid checksum. " +
                           "Sentence was: %s" % repr(nmea_string))
             return None
@@ -132,7 +132,7 @@ class RosNMEADriver(object):
             if not math.isnan(data['utc_time']):
                 current_time_ref.time_ref = rospy.Time.from_sec(data['utc_time'])
                 self.time_ref_pub.publish(current_time_ref)
-                
+
             return current_fix
 
         elif 'RMC' in parsed_sentence:
@@ -166,7 +166,7 @@ class RosNMEADriver(object):
                 if not math.isnan(data['utc_time']):
                     current_time_ref.time_ref = rospy.Time.from_sec(data['utc_time'])
                     self.time_ref_pub.publish(current_time_ref)
-            
+
             # Publish velocity from RMC regardless, since GGA doesn't provide it.
             if data['fix_valid']:
                 current_vel = TwistStamped()
@@ -177,7 +177,7 @@ class RosNMEADriver(object):
                 current_vel.twist.linear.y = data['speed'] * \
                     math.cos(data['true_course'])
                 self.vel_pub.publish(current_vel)
-                
+
             return current_fix
         elif 'IMU' in parsed_sentence:
             data = parsed_sentence['IMU']
@@ -188,7 +188,7 @@ class RosNMEADriver(object):
             dataToPublish.header.stamp = rospy.get_rostime()
             self.IMU_data_publisher.publish(dataToPublish)
 
-            
+
         else:
             return None
 
