@@ -37,7 +37,7 @@ import rospy
 
 from sensor_msgs.msg import NavSatFix, NavSatStatus, TimeReference
 from geometry_msgs.msg import TwistStamped
-
+from geometry_msgs.msg import Vector3Stamped
 from enway_reach_rs_driver.checksum_utils import check_nmea_checksum
 import enway_reach_rs_driver.parser
 
@@ -47,6 +47,8 @@ class RosNMEADriver(object):
         self.fix_pub = rospy.Publisher('fix', NavSatFix, queue_size=1)
         self.vel_pub = rospy.Publisher('vel', TwistStamped, queue_size=1)
         self.time_ref_pub = rospy.Publisher('time_reference', TimeReference, queue_size=1)
+        self.IMU_data_publisher_topic = rospy.get_param('~imu_topic_publish')
+        self.IMU_data_publisher = rospy.Publisher(IMU_data_publisher_topic, Vector3Stamped, queue_size=10)
 
         self.time_ref_source = rospy.get_param('~time_ref_source', None)
         self.use_RMC = rospy.get_param('~useRMC', False)
@@ -164,7 +166,7 @@ class RosNMEADriver(object):
                 if not math.isnan(data['utc_time']):
                     current_time_ref.time_ref = rospy.Time.from_sec(data['utc_time'])
                     self.time_ref_pub.publish(current_time_ref)
-
+            
             # Publish velocity from RMC regardless, since GGA doesn't provide it.
             if data['fix_valid']:
                 current_vel = TwistStamped()
@@ -177,6 +179,16 @@ class RosNMEADriver(object):
                 self.vel_pub.publish(current_vel)
                 
             return current_fix
+        elif 'IMU' in parsed_sentence:
+            data = parsed_sentence['IMU']
+            dataToPublish =  Vector3Stamped()
+            dataToPublish.vector.x = data['yaw']
+            dataToPublish.vector.y = data['pitch']
+            dataToPublish.vector.z = data['roll']
+            dataToPublish.header.stamp = rospy.get_rostime()
+            self.IMU_data_publisher.publish(dataToPublish)
+
+            
         else:
             return None
 
